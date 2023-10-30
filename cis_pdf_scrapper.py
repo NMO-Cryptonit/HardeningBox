@@ -34,6 +34,31 @@ class CISPdfScrapper:
     def setParagraphsOrder(self, policy):
         dict_index = {}
 
+        hardeningcommands=False
+        if 'Remediation:' in policy:
+            dict_index['Remediation:'] = policy.find('Remediation:')
+            hardeningcommands=True
+
+        hardeningscripts=False
+        if 'Remediation:' in policy:
+            dict_index['Remediation:'] = policy.find('Remediation:')
+            hardeningscripts=True
+
+        auditscommands=False
+        if 'Audit:' in policy:
+            dict_index['Audit:'] = policy.find('Audit:')
+            auditscommands=True
+
+        auditsscript=False
+        if 'Audit:' in policy:
+            dict_index['Audit:'] = policy.find('Audit:')
+            auditsscript=True
+
+        level1=False
+        if 'Profile Applicability:' in policy:
+            dict_index['Profile Applicability:'] = policy.find('Profile Applicability:')
+            level1=True
+
         description=False
         if 'Description:' in policy:
             dict_index['Description:'] = policy.find('Description:')
@@ -67,7 +92,7 @@ class CISPdfScrapper:
 
         sorted_ = list({k: v for k, v in sorted(dict_index.items(), key=lambda item: item[1])})
 
-        return sorted_, description, rationale, impact, audit, remediation, defaultvalue
+        return sorted_, level1, description, rationale, impact, audit, auditscommands, auditsscript, remediation, hardeningcommands, hardeningscripts, defaultvalue
 
 
     """ 
@@ -79,25 +104,50 @@ class CISPdfScrapper:
     def ScrapPdfData(self):
         self.LimitTxtToPoliciesOnly()
         # Transform text into a list of policies, split is based on title : "1.1.1 (L1)" with a regex
-        cis_policies = re.split(r"(\d+[\.\d+]+ .*\nProfile Applicability)",self.pdf2txt)
+        cis_policies = re.split(r"(\d+\.\d+\.\d+.*?)(?=Profile Applicability|$)", self.pdf2txt, flags=re.DOTALL)
         cis_policies.pop(0)
         cis_policies = [''.join(cis_policies[i:i+2]) for i in range(0, len(cis_policies), 2)]
+
 
         # Add csv header to csv output
         try:
             f = open(self.output_filepath, 'w+')
-            f.write('"ID","Level","Policy Name","Default Value","Recommended Value","Impact","Description","Rationale","Remediation"\n')
+            f.write('"ID","Level","Policy Name","Default Value","Recommended Value","Impact","Description","Rationale","Audit","Audit_command","Audit_script","Hardening","Hardening_command","Hardening_script"\n')
             f.close()
         except:
             throw("Couldn't write to output filepath, please verify you have rights to write, exiting.", "highs")
 
         for policy in cis_policies:
-            policy = re.sub(r'\d* \| P a g e', '', policy) # Remove page strings
+            print()
+            policy = re.sub(r'\d* \| P a g e', '', policy)  # Supprimer les chaînes de page
 
-            id = re.findall(r'(^\d+[\.\d]+) ', policy)[0] # Retreive policy ID
-            policy_name = re.findall(id+r' (.*)', policy)[0]
+            # Retrouver l'id de la politique
+            id_match = re.match(r'^(\d+[\.\d]+) ', policy)
+            if id_match:
+                id = id_match.group(1)
+                policy_name_match = re.match(id + r' (.*)', policy)
+                if policy_name_match:
+                    policy_name = policy_name_match.group(1)
+                    print(f"ID: {id}, Policy Name: {policy_name}")
 
-            sorted_, description, rationale, impact, audit, remediation, defaultvalue = self.setParagraphsOrder(policy)
+            sorted_,level1, description, rationale, impact, audit, auditscommands, auditsscript, remediation, hardeningcommands, hardeningscripts, defaultvalue = self.setParagraphsOrder(policy)
+            
+            
+            if level1:
+                level_index = sorted_.index('Profile Applicability:')
+                if level_index >= len(sorted_)-1:
+                    next_val = r'\n(.*)'
+                else:
+                    next_val = sorted_[level_index+1]
+                level_content = re.findall(r'Profile Applicability:\n((.|\n)*?)'+next_val, policy)
+
+                if len(level_content) > 0:
+                    level_content = level_content[0][0].replace('\n','').replace("\"","\'").encode("ascii", "ignore").decode() # Retreive level
+                else:
+                    level_content = ''
+            else:
+                level_content = ''
+
 
             if description:
                 description_index = sorted_.index('Description:')
@@ -105,7 +155,7 @@ class CISPdfScrapper:
                     next_val = r'\n(.*)'
                 else:
                     next_val = sorted_[description_index+1]
-                
+
                 description_content = re.findall(r'Description:\n((.|\n)*?)'+next_val, policy)
                 if len(description_content) > 0:
                     description_content = description_content[0][0].replace('\n','').replace("\"","\'").encode("ascii", "ignore").decode() # Retreive description
@@ -123,6 +173,7 @@ class CISPdfScrapper:
                 description_content = ''
                 recommended_value = ''
 
+
             if rationale:
                 rationale_index = sorted_.index('Rationale:')
                 if rationale_index >= len(sorted_)-1:
@@ -138,28 +189,123 @@ class CISPdfScrapper:
             else:
                 rationale_content = ''
 
+
             if audit:
                 audit_index = sorted_.index('Audit:')
                 if audit_index >= len(sorted_)-1:
                     next_val = r'\n(.*)'
                 else:
                     next_val = sorted_[audit_index+1]
-                #audit_content = re.findall(r'Audit:\n((.|\n)*?)'+next_val, policy)[0][0].replace('\n','').replace("\"","\'") # Retreive audit
+
+                audit_content = re.findall(r'Audit:\n((.|\n)*?)'+next_val, policy)
+                if len(audit_content) > 0:
+                    audit_contentv1 = audit_content[0][0].replace('\n','zzz').replace("\"","\'").encode("ascii", "ignore").decode()
+                    audit_contentv2 = audit_content[0][0].replace('\n','xxx').replace("\"","\'").encode("ascii", "ignore").decode()
+                    audit_content = audit_content[0][0].replace('\n','').replace("\"","\'").encode("ascii", "ignore").decode() # Retreive description
+                else:
+                    audit_content = ''
+            else:
+                audit_content = ''
+
+
+            if auditscommands:
+                auditc_index = sorted_.index('Audit:')
+                if auditc_index >= len(sorted_)-1:
+                    next_val = r'\n(.*)'
+                else:
+                    next_val = sorted_[auditc_index+1]
+
+                audit_command = re.findall(r'Run the following command(.*)', audit_contentv1) # retreive audit script
+                if len(audit_command) == 0:
+                    audit_command = re.findall(r'the following command(.*)', audit_contentv1) # same
+                if len(audit_command) != 0:
+                    audit_command = audit_command[0].replace('\n','').replace("\"","\'").encode("ascii", "ignore").decode()
+                    audit_command = re.sub('^.*?# ', '', audit_command)
+                    audit_command = re.sub(r'zzz.*', '', audit_command)
+
+                else:
+                    audit_command = ""
+            else:
+                audit_command = ''
+
+
+            if auditsscript:
+                audits_index = sorted_.index('Audit:')
+                if audits_index >= len(sorted_)-1:
+                    next_val = r'\n(.*)'
+                else:
+                    next_val = sorted_[audits_index+1]
+
+                audit_script = re.findall(r'Run the following script(.*\s*})', audit_contentv2) # retreive audit script
+                if len(audit_script) == 0:
+                    audit_script = re.findall(r'the following script(.*\s*})', audit_contentv2) # same
+                if len(audit_script) != 0:
+                    audit_script = audit_script[0].replace('xxx','\n').replace("\"","\'").encode("ascii", "ignore").decode()
+                    audit_script = re.sub(r'.*#!/usr/bin/env', '#!/usr/bin/env', audit_script)
+                else:
+                    audit_script = ""
+            else:
+                audit_script = ''
+
 
             if remediation:
+                remediation_index = sorted_.index('Remediation:')
+                if remediation_index >= len(sorted_)-1:
+                    next_val = 'MITRE ATT&CK Mappings:'
+                else:
+                    next_val = sorted_[remediation_index+1]
+                remediation_content = re.findall(r'Remediation:\n((.|\n)*?)'+next_val, policy)
+
+                remediation_content = re.findall(r'Remediation:\n((.|\n)*?)'+next_val, policy)
+                if len(remediation_content) > 0:
+                    remediation_contentv1 = remediation_content[0][0].replace('\n','zzz').replace("\"","\'").encode("ascii", "ignore").decode()
+                    remediation_contentv2 = remediation_content[0][0].replace('\n','xxx').replace("\"","\'").encode("ascii", "ignore").decode()
+                    remediation_content = remediation_content[0][0].replace('\n','').replace("\"","\'").encode("ascii", "ignore").decode() # Retreive description
+
+                else:
+                    remediation_content = ''
+            else:
+                remediation_content = ''
+            
+
+            if hardeningcommands:
                 remediation_index = sorted_.index('Remediation:')
                 if remediation_index >= len(sorted_)-1:
                     next_val = r'\n(.*)'
                 else:
                     next_val = sorted_[remediation_index+1]
-                out =[]
-                strings = policy.splitlines()
-                for index, line in enumerate(strings):
-                    if 'Computer Configuration\\' in line or 'User Configuration\\' in line:
-                        if index+1 < len(strings) and '\\' in strings[index+1]:
-                            line+=strings[index+1]
-                        out.append(line.strip())
-                remediation_content = ';'.join(out)
+
+                hardeningcommands = re.findall(r'Run the following command(.*)', remediation_contentv1) # retreive hardening command
+                if len(hardeningcommands) == 0:
+                    hardeningcommands = re.findall(r'the following command(.*)', remediation_contentv1) # same
+                if len(hardeningcommands) != 0:
+                    hardeningcommands = hardeningcommands[0].replace('\n','').replace("\"","\'").encode("ascii", "ignore").decode()
+                    hardeningcommands = re.sub('^.*?# ', '', hardeningcommands)
+                    hardeningcommands = re.sub(r'zzz.*', '', hardeningcommands)
+                else:
+                    hardeningcommands = ""
+            else:
+                hardeningcommands = ''
+
+
+            if hardeningscripts:
+                remediation_index = sorted_.index('Remediation:')
+                if remediation_index >= len(sorted_)-1:
+                    next_val = r'\n(.*)'
+                else:
+                    next_val = sorted_[remediation_index+1]
+
+                hardeningscripts = re.findall(r'Run the following script(.*\s*})', remediation_contentv2) # retreive hardening script
+                if len(hardeningscripts) == 0:
+                    hardeningscripts = re.findall(r'The following script(.*\s*})', remediation_contentv2) # same
+                if len(hardeningscripts) != 0:
+                    hardeningscripts = hardeningscripts[0].replace('xxx','\n').replace("\"","\'").encode("ascii", "ignore").decode()
+                    hardeningscripts = re.sub(r'.*#!/usr/bin/env', '#!/usr/bin/env', hardeningscripts)
+                else:
+                    hardeningscripts = ""
+            else:
+                hardeningscripts = ''
+
 
             if impact:
                 impact_index = sorted_.index('Impact:')
@@ -194,5 +340,5 @@ class CISPdfScrapper:
             level = self.ParsePolicyName(policy_name)
 
             f = open(self.output_filepath, 'a')
-            f.write('"'+id+'","'+level+'","'+policy_name+'","'+defaultvalue_content+'","'+recommended_value+'","'+impact_content+'","'+description_content+'","'+rationale_content+'","'+remediation_content+'"\n')
+            f.write('"'+id+'","'+level_content+'","'+policy_name+'","'+defaultvalue_content+'","'+recommended_value+'","'+impact_content+'","'+description_content+'","'+rationale_content+'","'+audit_content+'","'+audit_command+'","'+audit_script+'","'+remediation_content+'","'+hardeningcommands+'","'+hardeningscripts+'"\n')
             f.close()
