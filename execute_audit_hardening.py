@@ -1,5 +1,4 @@
 import subprocess
-import csv 
 from cmd import Cmd
 import pandas as pd
 
@@ -59,44 +58,44 @@ class shell(Cmd):
     
     def Audit(self):
         csv_file = input("Specify the name of the input CSV file : ")
-        read_csv = pd.read_csv(csv_file)
-        next(read_csv)
-        for columns in read_csv:
-            command = columns[0]
-            script = columns[1]
+        df = pd.read_csv(csv_file)
+        for index, columns in df.iterrows():
+            command = columns['audit_command']
+            script = columns['audit_script']
             print(f"columns 0 : {command} , columns 1 = {script}")
             if command:
-                subprocess.run(["chmod", "+x", command], check = True)
+                subprocess.run(["chmod", "770", command], check = True)
                 returncode, stdout, stderr = self.ExecuteCommand(command)
                 print(command)
                 print(f"Return Code : {returncode}")
                 print(f"Command Output: {stdout}")
                 print(f"Command Error: {stderr}")
             if script:
-                subprocess.run(["chmod",  "+x", script], check = True)
+                print(f"columns 0 : {command} , columns 1 = {script}")
+                subprocess.run(["chmod",  "770", script], check = True)
                 returncode, stdout, stderr = self.ExecuteSript(script)
                 print(script)
                 print(f"Return Code : {returncode}")
                 print(f"Command Output: {stdout}")
                 print(f"Command Error: {stderr}")
 
+    #
     def Hardening(self):
         csv_file = input("Specify the name of the input CSV file : ")
-        read_csv = pd.read_csv(csv_file)
-        next(read_csv)
-        for columns in read_csv:
-            command = columns[2]
-            script = columns[3]
+        df = pd.read_csv(csv_file)
+        for index, columns in df.iterrows():
+            command = columns['hardening_command']
+            script = columns['hardening_script']
             print(f"columns 2 : {command}, columns 3 = {script}")
-            if command:
-                subprocess.run(["chmod", "+x", command], check = True)
+            if pd.notna(command):
+                subprocess.run(["chmod", "770", command], check = True)
                 returncode, stdout, stderr = self.ExecuteCommand(command)
                 print(command)
                 print(f"Return Code : {returncode}")
                 print(f"Command Output: {stdout}")
                 print(f"Command Error: {stderr}")
             if script:
-                subprocess.run(["chmod",  "+x", script], check = True)
+                subprocess.run(["chmod",  "770", script], check = True)
                 returncode, stdout, stderr = self.ExecuteSript(script)
                 print(script)
                 print(f"Return Code : {returncode}")
