@@ -33,6 +33,7 @@ else:
     output_csv_path = f"{output_csv_path}.csv"
 
 
+
 def ScriptDirectory(input_csv, output_csv):
     # Load the existing CSV file
     df = pd.read_csv(input_csv)
@@ -49,40 +50,36 @@ def ScriptDirectory(input_csv, output_csv):
     for index, row in df.iterrows():
         # Audit command
         script1_content = row['Audit_command']
+        script1_filename = f"{script_directory}/{row['ID']}_audit_command.sh"
         if pd.notna(script1_content):
-            script1_filename = f"{script_directory}/{row['ID']}_audit_command.sh"
-            with open(script1_filename, 'w') as script_file:
-                script_file.write(script1_content)
+            pd.Series([script1_content], name='audit_command').to_csv(script1_filename, index=False, header=False)
             row['audit_command'] = script1_filename
         else:
             row['audit_command'] = ''
 
         # Audit script
         script2_content = row['Audit_script']
+        script2_filename = f"{script_directory}/{row['ID']}_audit_script.sh"
         if pd.notna(script2_content):
-            script2_filename = f"{script_directory}/{row['ID']}_audit_script.sh"
-            with open(script2_filename, 'w') as script_file:
-                script_file.write(script2_content)
+            pd.Series([script2_content], name='audit_script').to_csv(script2_filename, index=False, header=False)
             row['audit_script'] = script2_filename
         else:
             row['audit_script'] = ''
 
         # Hardening command
         script3_content = row['Hardening_command']
+        script3_filename = f"{script_directory}/{row['ID']}_Hardening_command.sh"
         if pd.notna(script3_content):
-            script3_filename = f"{script_directory}/{row['ID']}_Hardening_command.sh"
-            with open(script3_filename, 'w') as script_file:
-                script_file.write(script3_content)
+            pd.Series([script3_content], name='hardening_command').to_csv(script3_filename, index=False, header=False)
             row['hardening_command'] = script3_filename
         else:
             row['hardening_command'] = ''
 
         # Hardening script
         script4_content = row['Hardening_script']
+        script4_filename = f"{script_directory}/{row['ID']}_Hardening_script.sh"
         if pd.notna(script4_content):
-            script4_filename = f"{script_directory}/{row['ID']}_Hardening_script.sh"
-            with open(script4_filename, 'w') as script_file:
-                script_file.write(script4_content)
+            pd.Series([script4_content], name='hardening_script').to_csv(script4_filename, index=False, header=False)
             row['hardening_script'] = script4_filename
         else:
             row['hardening_script'] = ''
@@ -93,7 +90,9 @@ def ScriptDirectory(input_csv, output_csv):
     # Save the result DataFrame to the output CSV
     result_df.to_csv(output_csv, index=False)
 
+
 # Call the function
 ScriptDirectory(input_csv_path, output_csv_path)
+
 
 
