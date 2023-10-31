@@ -21,7 +21,7 @@ class shell(Cmd):
     """)
     print("Welcome! Type 'help' to list commands \n")
 
-    def DoHelp(self, args):
+    def do_help(self, args):
         self.Help()
 
 
@@ -41,10 +41,10 @@ class shell(Cmd):
 
 
 
-    def DoHardening(self, args):
+    def do_hardening(self, args):
         self.Hardening()
 
-    def DoAudit(self, args):
+    def do_audit(self, args):
         self.Audit()
     
     def ExecuteCommand(self, command):
