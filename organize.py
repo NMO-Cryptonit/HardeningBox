@@ -49,6 +49,7 @@ def ScriptDirectory(input_csv, output_csv):
     # Process each row
     for index, row in df.iterrows():
         # Audit command
+        
         script1_content = row['Audit_command']
         script1_filename = f"{script_directory}/{row['ID']}_audit_command.sh"
         if pd.notna(script1_content):
@@ -58,14 +59,17 @@ def ScriptDirectory(input_csv, output_csv):
             row['audit_command'] = ''
 
         # Audit script
+
         script2_content = row['Audit_script']
         script2_filename = f"{script_directory}/{row['ID']}_audit_script.sh"
         if pd.notna(script2_content):
             pd.Series([script2_content], name='audit_script').to_csv(script2_filename, index=False, header=False)
             row['audit_script'] = script2_filename
+
+            
         else:
             row['audit_script'] = ''
-
+        
         # Hardening command
         script3_content = row['Hardening_command']
         script3_filename = f"{script_directory}/{row['ID']}_Hardening_command.sh"
@@ -84,11 +88,14 @@ def ScriptDirectory(input_csv, output_csv):
         else:
             row['hardening_script'] = ''
 
+        
         # Append the processed row to the result DataFrame
         result_df = result_df._append(row[columns])
-
+        
     # Save the result DataFrame to the output CSV
     result_df.to_csv(output_csv, index=False)
+    
+    print("Finish !")
 
 
 # Call the function
