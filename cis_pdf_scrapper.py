@@ -142,7 +142,7 @@ class CISPdfScrapper:
                 level_content = re.findall(r'Profile Applicability:\n((.|\n)*?)'+next_val, policy)
 
                 if len(level_content) > 0:
-                    level_content = level_content[0][0].replace('\n','').replace("\"","\'").encode("ascii", "ignore").decode() # Retreive level
+                    level_content = level_content[0][0].replace('\n','').replace("\"","`").encode("ascii", "ignore").decode() # Retreive level
                 else:
                     level_content = ''
             else:
@@ -158,7 +158,7 @@ class CISPdfScrapper:
 
                 description_content = re.findall(r'Description:\n((.|\n)*?)'+next_val, policy)
                 if len(description_content) > 0:
-                    description_content = description_content[0][0].replace('\n','').replace("\"","\'").encode("ascii", "ignore").decode() # Retreive description
+                    description_content = description_content[0][0].replace('\n','').replace("\"","`").encode("ascii", "ignore").decode() # Retreive description
                 else:
                     description_content = ''
                 
@@ -166,7 +166,7 @@ class CISPdfScrapper:
                 if len(recommended_value) == 0:
                     recommended_value = re.findall(r'(?=It is recommended).*?(?=\.)', description_content) # IIS recommended value
                 if len(recommended_value) != 0:
-                    recommended_value = recommended_value[0].replace('\n','').replace("\"","\'").encode("ascii", "ignore").decode()
+                    recommended_value = recommended_value[0].replace('\n','').replace("\"","`").encode("ascii", "ignore").decode()
                 else:
                     recommended_value = ""
             else:
@@ -183,7 +183,7 @@ class CISPdfScrapper:
                 rationale_content = re.findall(r'Rationale:\n((.|\n)*?)'+next_val, policy)
 
                 if len(rationale_content) > 0:
-                    rationale_content = rationale_content[0][0].replace('\n','').replace("\"","\'").encode("ascii", "ignore").decode() # Retreive rationale
+                    rationale_content = rationale_content[0][0].replace('\n','').replace("\"","`").encode("ascii", "ignore").decode() # Retreive rationale
                 else:
                     rationale_content = ''
             else:
@@ -199,9 +199,9 @@ class CISPdfScrapper:
 
                 audit_content = re.findall(r'Audit:\n((.|\n)*?)'+next_val, policy)
                 if len(audit_content) > 0:
-                    audit_contentv1 = audit_content[0][0].replace('\n','zzz').replace("\"","\'").encode("ascii", "ignore").decode()
-                    audit_contentv2 = audit_content[0][0].replace('\n','xxx').replace("\"","\'").encode("ascii", "ignore").decode()
-                    audit_content = audit_content[0][0].replace('\n','').replace("\"","\'").encode("ascii", "ignore").decode() # Retreive description
+                    audit_contentv1 = audit_content[0][0].replace('\n','zzz').replace("\"","`").encode("ascii", "ignore").decode()
+                    audit_contentv2 = audit_content[0][0].replace('\n','xxx').replace("\"","`").encode("ascii", "ignore").decode()
+                    audit_content = audit_content[0][0].replace('\n','').replace("\"","`").encode("ascii", "ignore").decode() # Retreive description
                 else:
                     audit_content = ''
             else:
@@ -219,7 +219,7 @@ class CISPdfScrapper:
                 if len(audit_command) == 0:
                     audit_command = re.findall(r'the following command(.*)', audit_contentv1) # same
                 if len(audit_command) != 0:
-                    audit_command = audit_command[0].replace('\n','').replace("\"","\'").encode("ascii", "ignore").decode()
+                    audit_command = audit_command[0].replace('\n','').replace("\"","`").encode("ascii", "ignore").decode()
                     audit_command = re.sub('^.*?# ', '', audit_command)
                     audit_command = re.sub(r'zzz.*', '', audit_command)
 
@@ -240,8 +240,8 @@ class CISPdfScrapper:
                 if len(audit_script) == 0:
                     audit_script = re.findall(r'the following script(.*\s*})', audit_contentv2) # same
                 if len(audit_script) != 0:
-                    audit_script = audit_script[0].replace('xxx','\n').replace("\"","\'").encode("ascii", "ignore").decode()
-                    audit_script = re.sub(r'.*#!/usr/bin/env', '#!/usr/bin/env', audit_script)
+                    audit_script = audit_script[0].replace('xxx','\n').replace("\"","`").encode("ascii", "ignore").decode()
+                    audit_script = re.sub(r'.*?\s*#!/usr/bin/env', '#!/usr/bin/env', audit_script, flags=re.DOTALL)
                 else:
                     audit_script = ""
             else:
@@ -258,9 +258,9 @@ class CISPdfScrapper:
 
                 remediation_content = re.findall(r'Remediation:\n((.|\n)*?)'+next_val, policy)
                 if len(remediation_content) > 0:
-                    remediation_contentv1 = remediation_content[0][0].replace('\n','zzz').replace("\"","\'").encode("ascii", "ignore").decode()
-                    remediation_contentv2 = remediation_content[0][0].replace('\n','xxx').replace("\"","\'").encode("ascii", "ignore").decode()
-                    remediation_content = remediation_content[0][0].replace('\n','').replace("\"","\'").encode("ascii", "ignore").decode() # Retreive description
+                    remediation_contentv1 = remediation_content[0][0].replace('\n','zzz').replace("\"","`").encode("ascii", "ignore").decode()
+                    remediation_contentv2 = remediation_content[0][0].replace('\n','xxx').replace("\"","`").encode("ascii", "ignore").decode()
+                    remediation_content = remediation_content[0][0].replace('\n','').replace("\"","`").encode("ascii", "ignore").decode() # Retreive description
 
                 else:
                     remediation_content = ''
@@ -279,7 +279,7 @@ class CISPdfScrapper:
                 if len(hardeningcommands) == 0:
                     hardeningcommands = re.findall(r'the following command(.*)', remediation_contentv1) # same
                 if len(hardeningcommands) != 0:
-                    hardeningcommands = hardeningcommands[0].replace('\n','').replace("\"","\'").encode("ascii", "ignore").decode()
+                    hardeningcommands = hardeningcommands[0].replace('\n','').replace("\"","`").encode("ascii", "ignore").decode()
                     hardeningcommands = re.sub('^.*?# ', '', hardeningcommands)
                     hardeningcommands = re.sub(r'zzz.*', '', hardeningcommands)
                 else:
@@ -299,8 +299,8 @@ class CISPdfScrapper:
                 if len(hardeningscripts) == 0:
                     hardeningscripts = re.findall(r'The following script(.*\s*})', remediation_contentv2) # same
                 if len(hardeningscripts) != 0:
-                    hardeningscripts = hardeningscripts[0].replace('xxx','\n').replace("\"","\'").encode("ascii", "ignore").decode()
-                    hardeningscripts = re.sub(r'.*#!/usr/bin/env', '#!/usr/bin/env', hardeningscripts)
+                    hardeningscripts = hardeningscripts[0].replace('xxx','\n').replace("\"","`").encode("ascii", "ignore").decode()
+                    hardeningscripts = re.sub(r'.*?\s*#!/usr/bin/env', '#!/usr/bin/env', hardeningscripts, flags=re.DOTALL)
                 else:
                     hardeningscripts = ""
             else:
@@ -316,7 +316,7 @@ class CISPdfScrapper:
 
                 impact_content = re.findall(r'Impact:\n((.|\n)*?)'+next_val, policy)
                 if len(impact_content) > 0:
-                    impact_content = impact_content[0][0].replace('\n','').replace("\"","\'").encode("ascii", "ignore").decode() # Retreive impact
+                    impact_content = impact_content[0][0].replace('\n','').replace("\"","`").encode("ascii", "ignore").decode() # Retreive impact
                 else:
                     impact_content = ''
             else:
@@ -330,7 +330,7 @@ class CISPdfScrapper:
                     next_val = sorted_[defaultvalue_index+1]
                 defaultvalue_content = re.findall(r'Default Value:\n((.|\n)*?)'+next_val, policy)
                 if len(defaultvalue_content) > 0:
-                    defaultvalue_content = defaultvalue_content[0][0].replace('\n','').replace("\"","\'").encode("ascii", "ignore").decode() # Retreive default value
+                    defaultvalue_content = defaultvalue_content[0][0].replace('\n','').replace("\"","`").encode("ascii", "ignore").decode() # Retreive default value
                 else:
                     defaultvalue_content = ''
             else:
