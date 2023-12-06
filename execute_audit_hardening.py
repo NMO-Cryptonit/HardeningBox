@@ -198,17 +198,43 @@ class shell(Cmd):
         new_path = os.path.relpath('logs/log_audit.txt')
         abs_file_path = os.path.join(cur_path, new_path)
 
-        code_search = ["Return Code : -1", "Return Code : 0", "Return Code : 1", "Return Code : 2", "Return Code : 3","Return Code : 4","Return Code : 126", "Return Code : 127", "Return Code : 128", "Return Code : 255", "FAIL", "SUCCESS"]
+        script_results = {}
 
-        occurences = {texte: 0 for texte in code_search}
+        with open(abs_file_path, 'r') as file:
+            current_script = None
+            audit_result = None
+            return_code = None
 
-        with open(abs_file_path,'r') as file:
             for line in file:
-                for texte in code_search:
-                    if texte in line:
-                        occurences[texte] += 1
-        for texte, count in occurences.items():
-            print(f"Ocurrences de {texte}: {count}")
+                if line.startswith("scripts/") or line.startswith("Command Error : scripts/"):
+                    if current_script is not None:
+                        script_results[current_script] = f"{audit_result}({return_code})"
+                    current_script = line.strip()
+                    current_script = current_script.replace("Command Error : ", "")
+                    current_script = current_script.replace("scripts/", "")
+
+                    audit_result = None
+                    return_code = None
+                elif "Return Code :" in line:
+                    parts = line.split("Return Code : ")
+                    if len(parts) > 1:
+                        return_code = parts[1].split()[0].strip()
+                elif "Audit Result:" in line:
+                    audit_result_line = next(file).strip()
+                    if "FAIL" in audit_result_line:
+                        audit_result = "FAIL"
+                    elif "PASS" in audit_result_line:
+                        audit_result = "PASS"
+            
+
+        # Write results to a log file
+        with open('retour.log', 'w') as log_file:
+            for script, result in script_results.items():
+                log_file.write(f"{script} -> {result}\n")
+            
+
+        print("Log file 'retour.log' created successfully.")
+            
 
     def ResultHardening(self):
         cur_path = os.path.dirname(__file__)
