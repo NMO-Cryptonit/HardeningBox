@@ -88,8 +88,9 @@ class shell(Cmd):
 
             command = columns['audit_command']
             script = columns['audit_script']
+            policy_name = columns['Policy_Name']
+            command_output = columns['Audit_output']
             print(f"columns 0 : {command} , columns 1 = {script}")
-
             if pd.notna(command):
 
                 subprocess.run(["chmod", "770", command], check = True)
@@ -104,11 +105,23 @@ class shell(Cmd):
                 returncode, stdout, stderr = self.ExecuteCommand(command)
 
                 with open(abs_file_path, 'a') as f:
-                    f.write(command+"\n"+"Return Code : "+str(returncode)+"\n"+"Command Output : "+str(stdout)+"\n"+"Command Error : "+ str(stderr) )
+                    if str(stdout).strip() in str(command_output).strip() and str(stdout) and str(command_output) is not None:
+                        f.write("\nAudit Result:\nPASS\n")
+                    else:
+                        f.write("\nAudit Result:\nFAIL\n")
+                    
+                    f.write("Policy Name: "+ str(policy_name) +"\n")
+                    f.write(command+"\n"+"Return Code : "+str(returncode)+"\n"+"Command Output : "+str(stdout))
+                    f.write("Command Error : "+ str(stderr) + "\n" )
+                    
+                    
+         
+                print(f"\nPolicy Name: {policy_name}")                
                 print(command)
                 print(f"Return Code : {returncode}")
                 print(f"Command Output: {stdout}")
                 print(f"Command Error: {stderr}")
+
 
             if pd.notna(script):
 
@@ -126,11 +139,15 @@ class shell(Cmd):
                 returncode, stdout, stderr = self.ExecuteScript(script)
 
                 with open(abs_file_path, 'a') as f:
-                    f.write(script+"\n"+"Return Code : "+str(returncode)+"\n"+"Command Output : "+str(stdout)+"\n"+"Command Error : "+ str(stderr) )
+                   f.write("Policy Name: "+ str(policy_name) +"\n")
+                   f.write(script+"\n"+"Return Code : "+str(returncode)+"\n"+"Command Output : "+str(stdout)+"\n"+"Command Error : "+ str(stderr) + "\n" )
+                print(f"Policy Name: {policy_name}")                                
                 print(script)
                 print(f"Return Code : {returncode}")
                 print(f"Command Output: {stdout}")
                 print(f"Command Error: {stderr}")
+                print(f"Policy Name: {policy_name}")
+
         self.ResultAudit()
 
  # Execute hardening command and script
@@ -199,22 +216,20 @@ class shell(Cmd):
         abs_file_path = os.path.join(cur_path, new_path)
 
         script_results = {}
+        policy_names = []
 
         with open(abs_file_path, 'r') as file:
-            current_script = None
+            current_policy_name = None
+            current_script_prefix = None
             audit_result = None
             return_code = None
 
             for line in file:
-                if line.startswith("scripts/") or line.startswith("Command Error : scripts/"):
-                    if current_script is not None:
-                        script_results[current_script] = f"{audit_result}({return_code})"
-                    current_script = line.strip()
-                    current_script = current_script.replace("Command Error : ", "")
-                    current_script = current_script.replace("scripts/", "")
-
-                    audit_result = None
-                    return_code = None
+                if line.startswith("Policy Name: "):
+                    current_policy_name = line[len("Policy Name: "):].strip()
+                    policy_names.append(current_policy_name)
+                elif line.startswith("scripts/") and current_policy_name is not None:
+                    current_script_prefix = line.split("_")[0].replace("scripts/", "")
                 elif "Return Code :" in line:
                     parts = line.split("Return Code : ")
                     if len(parts) > 1:
@@ -223,15 +238,23 @@ class shell(Cmd):
                     audit_result_line = next(file).strip()
                     if "FAIL" in audit_result_line:
                         audit_result = "FAIL"
-                    elif "PASS" in audit_result_line:
+                    if "PASS" in audit_result_line:
                         audit_result = "PASS"
-            
+                    
+                elif line.strip() == "":
+                    # If an empty line is encountered, it indicates the end of a section, save the result
+                    if current_policy_name is not None and current_script_prefix is not None:
+                        combined_name = f"{current_script_prefix} : {current_policy_name}"
+                        script_results[combined_name] = f" -> {audit_result}({return_code})"
+                    current_policy_name = None
+                    current_script_prefix = None
+                    audit_result = None
+                    return_code = None
 
         # Write results to a log file
         with open('retour.log', 'w') as log_file:
-            for script, result in script_results.items():
-                log_file.write(f"{script} -> {result}\n")
-            
+            for name, result in script_results.items():
+                log_file.write(f"{name} {result}\n")
 
         print("Log file 'retour.log' created successfully.")
             

@@ -39,7 +39,7 @@ def ScriptDirectory(input_csv, output_csv):
     df = pd.read_csv(input_csv)
 
     # Create a new DataFrame with the columns
-    columns = ['audit_command', 'audit_script', 'hardening_command', 'hardening_script']
+    columns = ['audit_command', 'audit_script', 'hardening_command', 'hardening_script', 'Policy_Name', 'Audit_output']
     result_df = pd.DataFrame(columns=columns)
 
     # Create directory
@@ -87,6 +87,23 @@ def ScriptDirectory(input_csv, output_csv):
             row['hardening_script'] = script4_filename
         else:
             row['hardening_script'] = ''
+
+        # Policy Name
+        script5_content = row['Policy_Name']
+        script5_filename = f"{row['Policy_Name']}"
+        if pd.notna(script5_content):
+            row['Policy_Name'] = script5_filename
+        else:
+            row['Policy_Name'] = ''
+
+        #output commands
+        script6_content = row['Audit_output']
+        script6_filename = f"{row['Audit_output']}"
+        if pd.notna(script6_content):
+            row['Audit_output'] = script6_filename
+        else:
+            row['Audit_output'] = ''
+
 
         
         # Append the processed row to the result DataFrame

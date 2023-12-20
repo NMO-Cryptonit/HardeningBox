@@ -54,6 +54,11 @@ class CISPdfScrapper:
             dict_index['Audit:'] = policy.find('Audit:')
             auditsscript=True
 
+        auditsoutput=False
+        if 'Audit:' in policy:
+            dict_index['Audit:'] = policy.find('Audit:')
+            auditsoutput=True
+
         level1=False
         if 'Profile Applicability:' in policy:
             dict_index['Profile Applicability:'] = policy.find('Profile Applicability:')
@@ -92,7 +97,7 @@ class CISPdfScrapper:
 
         sorted_ = list({k: v for k, v in sorted(dict_index.items(), key=lambda item: item[1])})
 
-        return sorted_, level1, description, rationale, impact, audit, auditscommands, auditsscript, remediation, hardeningcommands, hardeningscripts, defaultvalue
+        return sorted_, level1, description, rationale, impact, audit, auditscommands, auditsscript, auditsoutput, remediation, hardeningcommands, hardeningscripts, defaultvalue
 
 
     """ 
@@ -112,7 +117,7 @@ class CISPdfScrapper:
         # Add csv header to csv output
         try:
             f = open(self.output_filepath, 'w+')
-            f.write('"ID","Level","Policy Name","Default Value","Recommended Value","Impact","Description","Rationale","Audit","Audit_command","Audit_script","Hardening","Hardening_command","Hardening_script"\n')
+            f.write('"ID","Level","Policy_Name","Default Value","Recommended Value","Impact","Description","Rationale","Audit","Audit_command","Audit_script","Audit_output","Hardening","Hardening_command","Hardening_script"\n')
             f.close()
         except:
             throw("Couldn't write to output filepath, please verify you have rights to write, exiting.", "highs")
@@ -130,7 +135,7 @@ class CISPdfScrapper:
                     policy_name = policy_name_match.group(1)
                     print(f"ID: {id}, Policy Name: {policy_name}")
 
-            sorted_,level1, description, rationale, impact, audit, auditscommands, auditsscript, remediation, hardeningcommands, hardeningscripts, defaultvalue = self.setParagraphsOrder(policy)
+            sorted_,level1, description, rationale, impact, audit, auditscommands, auditsscript, auditsoutput, remediation, hardeningcommands, hardeningscripts, defaultvalue = self.setParagraphsOrder(policy)
             
             
             if level1:
@@ -206,6 +211,29 @@ class CISPdfScrapper:
                     audit_content = ''
             else:
                 audit_content = ''
+
+
+            if auditsoutput:
+                audito_index = sorted_.index('Audit:')
+                if audito_index >= len(sorted_)-1:
+                    next_val = r'\n(.*)'
+                else:
+                    next_val = sorted_[audito_index+1]
+
+                audit_output = re.findall(r'enabled', audit_content) # retreive audit output "is enabled"
+                if len(audit_output) == 0:
+                    audit_output = re.findall(r'verify that the\s+(\w+)', audit_content) # find the next word after the phrase for " nosuid / nodev / chrony its the current pattern"
+                if len(audit_output) != 0:
+                    audit_output = audit_output[0].replace('\n','').replace("\"","`").encode("ascii", "ignore").decode()
+                    audit_output = re.sub('^.*?# ', '', audit_output)
+                    audit_output = re.sub(r'zzz.*', '', audit_output)
+
+                else:
+                    audit_output = ""
+            else:
+                audit_output = ''
+            
+
 
 
             if auditscommands:
@@ -340,5 +368,5 @@ class CISPdfScrapper:
             level = self.ParsePolicyName(policy_name)
 
             f = open(self.output_filepath, 'a')
-            f.write('"'+id+'","'+level_content+'","'+policy_name+'","'+defaultvalue_content+'","'+recommended_value+'","'+impact_content+'","'+description_content+'","'+rationale_content+'","'+audit_content+'","'+audit_command+'","'+audit_script+'","'+remediation_content+'","'+hardeningcommands+'","'+hardeningscripts+'"\n')
+            f.write('"'+id+'","'+level_content+'","'+policy_name+'","'+defaultvalue_content+'","'+recommended_value+'","'+impact_content+'","'+description_content+'","'+rationale_content+'","'+audit_content+'","'+audit_command+'","'+audit_script+'","'+audit_output+'","'+remediation_content+'","'+hardeningcommands+'","'+hardeningscripts+'"\n')
             f.close()
